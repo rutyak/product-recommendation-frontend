@@ -8,7 +8,7 @@ import profileIcon from "../assets/profile.png";
 function Navbar() {
   const { user, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false); 
-  const [profileOpen, setProfileOpen] = useState(false); // State for profile dropdown
+  const [profileOpen, setProfileOpen] = useState(false); 
 
   const navigate = useNavigate();
 
@@ -19,7 +19,7 @@ function Navbar() {
   };
 
   const toggleProfile = () => {
-    setProfileOpen((prevState) => !prevState); // Toggle profile dropdown
+    setProfileOpen((prevState) => !prevState); 
   };
 
   const handleLogout = () => {
@@ -38,7 +38,7 @@ function Navbar() {
         <Link to="/" className={pageStyle}>
           Home
         </Link>
-        <Link to="/cart" className={pageStyle}>
+        <Link to="/" className={pageStyle}>
           Cart
         </Link>
 

@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ProductCard from "../../components/ProductCard";
-import trackEvent from "../../components/TrackEvent"; 
-import { useAuth } from "../../context/AuthContext";
+import trackEvent from "../../components/TrackEvent";
 
 const Base_url = process.env.REACT_APP_BACKEND_URL;
 
 function Home() {
-  const { userData } = useAuth();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [loading, setLoading] = useState(false);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [pageLoadTime, setPageLoadTime] = useState(null);
 
-  console.log("userData", userData);
-
   const user = JSON.parse(localStorage.getItem("user"));
+
+  console.log("user from localstorage: ", user);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -34,7 +31,7 @@ function Home() {
         );
         setCategories(uniqueCategories);
 
-        trackEvent("PageLoad", { page: "Home" }, userData?._id);
+        trackEvent("PageLoad", { page: "Home" }, user?._id);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -49,36 +46,42 @@ function Home() {
 
     return () => {
       const endTime = Date.now();
-      const timeSpent = Math.round((endTime - startTime) / 1000); 
-      trackEvent("TimeSpentOnPage", { page: "Home", timeSpent }, userData?._id);
+      const timeSpent = Math.round((endTime - startTime) / 1000);
+      trackEvent("TimeSpentOnPage", { page: "Home", timeSpent }, user?._id);
     };
   }, []);
 
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        setLoadingRecommendations(true);
-        const { data } = await axios.get(`${Base_url}/recommendations/${user?._id}`);
-        setRecommendedProducts(data);
+        const { data } = await axios.get(
+          `${Base_url}/recommendations/${user?._id}`
+        );
 
-        trackEvent("RecommendationsLoaded", { count: data.length }, userData?._id);
+        console.log("recommendedProducts data from api: ",data);
+        if (data?.recommendedProducts?.length > 0) {
+          setRecommendedProducts(data?.recommendedProducts);
+          trackEvent(
+            "RecommendationsLoaded",
+            { count: data.length },
+            user?._id
+          );
+        }
       } catch (error) {
         console.error("Error fetching recommendations:", error);
-      } finally {
-        setLoadingRecommendations(false);
       }
     };
 
     fetchRecommendations();
-  }, []);
+  }, [trackEvent]);
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
 
-    trackEvent("CategoryChange", { selectedCategory: category }, userData._id);
+    trackEvent("CategoryChange", { selectedCategory: category }, user?._id);
 
     if (category === "") {
-      setFilteredProducts(products); 
+      setFilteredProducts(products);
     } else {
       setFilteredProducts(
         products.filter((product) => product.category === category)
@@ -88,8 +91,10 @@ function Home() {
 
   return (
     <div className="min-h-screen p-6 mobile:p-2 md:p-6">
-      <div className="text-center py-12 text-white rounded-lg shadow-lg mb-8 bg-gradient-to-r from-orange-500 to-red-500 mobile:py-6 md:py-10">
-        <h1 className="text-4xl font-bold mb-4 mobile:text-lg sm:text-xl md:text-2xl lg:text-4xl">Welcome to Our Shopping App</h1>
+      <div className="text-center py-12 text-white rounded-lg shadow-lg mb-8 bg-[linear-gradient(151.71deg,_#29C986_0%,_#2FC8E5_100%)] mobile:py-6 md:py-10">
+        <h1 className="text-4xl font-bold mb-4 mobile:text-lg sm:text-xl md:text-2xl lg:text-4xl">
+          Welcome to Our Shopping App
+        </h1>
         <p className="text-lg mb-6 mobile:text-sm mobile:mb-4 md:mb-6 md:text-lg">
           Shop the best products at amazing prices!
         </p>
@@ -130,7 +135,11 @@ function Home() {
               <div
                 key={product._id}
                 onClick={() =>
-                  trackEvent("ProductView", { productId: product._id }, userData._id)
+                  trackEvent(
+                    "ProductView",
+                    { productId: product._id },
+                    user?._id
+                  )
                 }
               >
                 <ProductCard product={product} />
@@ -148,29 +157,25 @@ function Home() {
         <h2 className="text-2xl font-semibold text-gray-800 mb-4 mobile:text-lg md:text-xl lg:text-2xl">
           Recommended for You
         </h2>
-        {loadingRecommendations ? (
-          <div className="flex justify-center items-center space-x-2">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-            <span>Loading recommendations...</span>
-          </div>
-        ) : recommendedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {recommendedProducts.map((product) => (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {recommendedProducts?.map((product) => (
+            <>
+              {console.log("product",product)}
               <div
                 key={product._id}
                 onClick={() =>
-                  trackEvent("RecommendedProductView", { productId: product._id }, userData._id)
+                  trackEvent(
+                    "RecommendedProductView",
+                    { productId: product._id },
+                    user?._id
+                  )
                 }
               >
                 <ProductCard product={product} />
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-600 text-center">
-            No recommendations available at the moment.
-          </p>
-        )}
+            </>
+          ))}
+        </div>
       </section>
     </div>
   );
